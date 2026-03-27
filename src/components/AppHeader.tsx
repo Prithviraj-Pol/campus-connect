@@ -1,7 +1,7 @@
 import { LogOut, Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useApp } from "@/context/AppContext";
+import { useApp } from "@/context/FakeAppContext";
 
 const AppHeader = () => {
   const { user, signOut } = useApp();

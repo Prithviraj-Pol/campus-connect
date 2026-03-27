@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useApp } from "@/context/AppContext";
+import { useApp } from "@/context/FakeAppContext";
 import AppHeader from "@/components/AppHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

@@ -59,6 +59,7 @@ interface AppContextType {
   registrations: string[];
   registerForEvent: (eventId: string, phone: string, semester: string, paymentStatus: string) => Promise<{ registrationId: string | null }>;
   isRegistered: (eventId: string) => boolean;
+  regCounts: Record<string, number>;
   getRegistrationCount: (eventId: string) => number;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
 }
@@ -275,7 +276,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider
       value={{
         user, loading, signUp, signIn, signOut,
-        colleges, events, venues,
+        colleges, events, venues, regCounts,
         refreshEvents, refreshVenues,
         addEvent, updateEventStatus,
         addVenue, deleteVenue,

@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2, XCircle, Trash2, Calendar, MapPin, Users, Inbox, Building2, PlusCircle } from "lucide-react";
 
 const AdminDashboard = () => {
-  const { user, loading: appLoading, events, venues, regCounts, updateEventStatus, addVenue, deleteVenue } = useApp() as any;
+  const { user, loading: appLoading, events, venues, regCounts, updateEventStatus, addVenue, deleteVenue } = useApp();
   const { toast } = useToast();
 
   if (appLoading) {
