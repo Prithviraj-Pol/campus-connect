@@ -1,9 +1,10 @@
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useApp } from "@/context/AppContext";
 
 const AppHeader = () => {
-  const { currentUser, logout } = useApp();
+  const { user, signOut } = useApp();
 
   return (
     <header className="sticky top-0 z-50 bg-primary shadow-lg">
@@ -11,15 +12,20 @@ const AppHeader = () => {
         <h1 className="text-xl font-extrabold text-primary-foreground tracking-tight">
           CampusSync
         </h1>
-        {currentUser && (
-          <div className="flex items-center gap-4">
-            <span className="text-primary-foreground/80 text-sm font-medium">
-              {currentUser.name} ({currentUser.role.toUpperCase()})
+        {user && (
+          <div className="flex items-center gap-3">
+            <span className="text-primary-foreground/80 text-sm font-medium hidden sm:inline">
+              {user.fullName}
             </span>
+            {user.role && (
+              <Badge variant="secondary" className="uppercase text-xs">
+                {user.role}
+              </Badge>
+            )}
             <Button
               variant="outline"
               size="sm"
-              onClick={logout}
+              onClick={signOut}
               className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
             >
               <LogOut className="w-4 h-4 mr-1" /> Logout

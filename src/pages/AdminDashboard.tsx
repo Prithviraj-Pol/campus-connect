@@ -12,8 +12,8 @@ const AdminDashboard = () => {
 
   const pendingEvents = events.filter((e) => e.status === "pending");
 
-  const handleAction = (id: string, status: "approved" | "rejected", title: string) => {
-    updateEventStatus(id, status);
+  const handleAction = async (id: string, status: "approved" | "rejected", title: string) => {
+    await updateEventStatus(id, status);
     toast({
       title: status === "approved" ? "✅ Event Approved" : "❌ Event Rejected",
       description: `"${title}" has been ${status}.`,
@@ -58,22 +58,13 @@ const AdminDashboard = () => {
                         <TableCell>{event.date}</TableCell>
                         <TableCell>{event.venue}</TableCell>
                         <TableCell>{event.category}</TableCell>
-                        <TableCell>{event.requested_by}</TableCell>
+                        <TableCell>{event.requester_name}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-2 justify-end">
-                            <Button
-                              size="sm"
-                              className="bg-success text-success-foreground hover:bg-success/90"
-                              onClick={() => handleAction(event.id, "approved", event.title)}
-                            >
+                            <Button size="sm" className="bg-success text-success-foreground hover:bg-success/90" onClick={() => handleAction(event.id, "approved", event.title)}>
                               <CheckCircle2 className="w-4 h-4 mr-1" /> Approve
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-destructive text-destructive hover:bg-destructive/10"
-                              onClick={() => handleAction(event.id, "rejected", event.title)}
-                            >
+                            <Button size="sm" variant="outline" className="border-destructive text-destructive hover:bg-destructive/10" onClick={() => handleAction(event.id, "rejected", event.title)}>
                               <XCircle className="w-4 h-4 mr-1" /> Reject
                             </Button>
                           </div>
