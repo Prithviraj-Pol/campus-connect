@@ -29,16 +29,7 @@ const LoginPage = () => {
   const [sendingReset, setSendingReset] = useState(false);
 
   const handleReset = async () => {
-    if (!forgotEmail) return;
-    setSendingReset(true);
-    const { error } = await resetPassword(forgotEmail);
-    setSendingReset(false);
-    if (error) {
-      toast({ title: "Failed to send reset", description: error, variant: "destructive" });
-    } else {
-      toast({ title: "Reset email sent!", description: "Check inbox/spam folder for link (leads back to login)." });
-      setForgotEmail(""); // clear for next
-    }
+    toast({ title: "Reset disabled", description: "Use demo accounts!", variant: "destructive" });
   };
 
   const handleSignIn = async () => {
@@ -49,16 +40,8 @@ const LoginPage = () => {
     if (error) toast({ title: "Sign in failed", description: error, variant: "destructive" });
   };
 
-  const handleSignUp = async () => {
-    if (!suName || !suEmail || !suPassword || !suRole) return;
-    setSigningUp(true);
-    const { error } = await signUp(suEmail, suPassword, suName, suRole as Role, "");
-    setSigningUp(false);
-    if (error) {
-      toast({ title: "Sign up failed", description: error, variant: "destructive" });
-    } else {
-      toast({ title: "✅ Account created!", description: "You are now signed in." });
-    }
+const handleSignUp = async () => {
+    toast({ title: "Sign up disabled", description: "Use demo login accounts!", variant: "destructive" });
   };
 
   return (

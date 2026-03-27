@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import type { User as SupabaseUser } from "@supabase/supabase-js";
+// Supabase removed - fake auth
 
 export type Role = "admin" | "hod" | "student";
 
@@ -90,28 +89,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   }, []);
 
-  const loadUserProfile = useCallback(async (supaUser: SupabaseUser) => {
-    const [profileRes, roleRes] = await Promise.all([
-      supabase.from("profiles").select("full_name, college_id").eq("user_id", supaUser.id).single(),
-      supabase.from("user_roles").select("role").eq("user_id", supaUser.id).single(),
-    ]);
-
-    const collegeId = profileRes.data?.college_id;
-    let collegeName = "";
-    if (collegeId) {
-      const { data: c } = await supabase.from("colleges").select("name").eq("id", collegeId).single();
-      collegeName = c?.name || "";
-    }
-
-    setUser({
-      id: supaUser.id,
-      email: supaUser.email || "",
-      fullName: profileRes.data?.full_name || supaUser.email || "",
-      role: (roleRes.data?.role as Role) || null,
-      college_id: collegeId || null,
-      college_name: collegeName,
-    });
-  }, []);
+  // Fake loadUserProfile - not used
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {

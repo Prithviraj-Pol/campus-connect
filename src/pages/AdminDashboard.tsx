@@ -11,8 +11,20 @@ import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2, XCircle, Trash2, Calendar, MapPin, Users, Inbox, Building2, PlusCircle } from "lucide-react";
 
 const AdminDashboard = () => {
-  const { events, venues, regCounts, updateEventStatus, addVenue, deleteVenue } = useApp() as any;
+  const { user, loading: appLoading, events, venues, regCounts, updateEventStatus, addVenue, deleteVenue } = useApp() as any;
   const { toast } = useToast();
+
+  if (appLoading) {
+    return (
+      <div className="min-h-screen bg-adminWhite flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-adminBlue" />
+      </div>
+    );
+  }
+
+  if (!user || user.role !== "admin") {
+    return null; // Will be handled by React Router or redirect
+  }
 
   const [venueName, setVenueName] = useState("");
   const [venueCapacity, setVenueCapacity] = useState("");
@@ -20,9 +32,13 @@ const AdminDashboard = () => {
 
   const pendingEvents = events.filter((e: any) => e.status === "pending");
 
-  const totalStudentsRegistered = useMemo(() => 
-    Object.values(regCounts || {}).reduce((sum: number, count: any) => sum + Number(count), 0)
-  , [regCounts]);
+  const totalStudentsRegistered = useMemo((): number => {
+    try {
+      return Object.values((regCounts as Record<string, any>) || {}).reduce((sum: number, count: any) => sum + Number(count), 0);
+    } catch {
+      return 0;
+    }
+  }, [regCounts]);
 
   const handleAction = async (id: string, status: "approved" | "rejected", title: string) => {
     await updateEventStatus(id, status);

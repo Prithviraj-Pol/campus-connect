@@ -3,6 +3,7 @@ import LoginPage from "./LoginPage";
 import StudentPortal from "./StudentPortal";
 import HODDashboard from "./HODDashboard";
 import AdminDashboard from "./AdminDashboard";
+import { Navigate } from "react-router-dom";
 
 const Index = () => {
   const { user, loading } = useApp();
@@ -23,7 +24,7 @@ const Index = () => {
     case "hod":
       return <HODDashboard />;
     case "admin":
-      return <AdminDashboard />;
+      return <Navigate to="/admin" replace />;
     default:
       return (
         <div className="min-h-screen bg-background flex items-center justify-center">
