@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { PlusCircle, Clock, CheckCircle2, XCircle } from "lucide-react";
 
-const VENUES = ["Main Auditorium", "Seminar Hall A", "Seminar Hall B", "Open Ground", "Computer Lab 1", "Library Hall"];
 const CATEGORIES = ["Technical", "Cultural", "Sports"];
 
 const statusConfig = {
@@ -20,25 +19,37 @@ const statusConfig = {
 };
 
 const HODDashboard = () => {
-  const { user, events, addEvent } = useApp();
+  const { user, events, venues, addEvent } = useApp();
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
-  const [venue, setVenue] = useState("");
+  const [venueId, setVenueId] = useState("");
   const [category, setCategory] = useState("");
+  const [fee, setFee] = useState("0");
+  const [maxCapacity, setMaxCapacity] = useState("100");
+  const [externalLink, setExternalLink] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const myEvents = events.filter((e) => e.requested_by === user?.id);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !date || !venue || !category) return;
+    if (!title || !date || !venueId || !category) return;
     setSubmitting(true);
-    const result = await addEvent({ title, date, venue, category });
+    const result = await addEvent({
+      title,
+      date,
+      venue_id: venueId,
+      category,
+      registration_fee: parseFloat(fee) || 0,
+      max_capacity: parseInt(maxCapacity) || 100,
+      external_link: externalLink || undefined,
+    });
     setSubmitting(false);
     if (result.success) {
       toast({ title: "✅ Success", description: result.message });
-      setTitle(""); setDate(""); setVenue(""); setCategory("");
+      setTitle(""); setDate(""); setVenueId(""); setCategory("");
+      setFee("0"); setMaxCapacity("100"); setExternalLink("");
     } else {
       toast({ title: "⚠️ Conflict Detected", description: result.message, variant: "destructive" });
     }
@@ -68,9 +79,15 @@ const HODDashboard = () => {
               </div>
               <div className="space-y-2">
                 <Label>Venue</Label>
-                <Select value={venue} onValueChange={setVenue}>
+                <Select value={venueId} onValueChange={setVenueId}>
                   <SelectTrigger><SelectValue placeholder="Select venue" /></SelectTrigger>
-                  <SelectContent>{VENUES.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {venues.length === 0 ? (
+                      <SelectItem value="none" disabled>No venues available</SelectItem>
+                    ) : (
+                      venues.map((v) => <SelectItem key={v.id} value={v.id}>{v.name} (Cap: {v.capacity})</SelectItem>)
+                    )}
+                  </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
@@ -80,8 +97,20 @@ const HODDashboard = () => {
                   <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label>Registration Fee ($)</Label>
+                <Input type="number" min="0" step="0.01" placeholder="0 for free" value={fee} onChange={(e) => setFee(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Max Student Capacity</Label>
+                <Input type="number" min="1" placeholder="100" value={maxCapacity} onChange={(e) => setMaxCapacity(e.target.value)} />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>External Link (optional)</Label>
+                <Input placeholder="https://..." value={externalLink} onChange={(e) => setExternalLink(e.target.value)} />
+              </div>
               <div className="sm:col-span-2">
-                <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold shadow" disabled={submitting || !title || !date || !venue || !category}>
+                <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold shadow" disabled={submitting || !title || !date || !venueId || !category}>
                   {submitting ? "Submitting..." : "Submit Event Request"}
                 </Button>
               </div>
@@ -102,7 +131,10 @@ const HODDashboard = () => {
                   <CardContent className="flex items-center justify-between py-4">
                     <div>
                       <p className="font-semibold text-foreground">{event.title}</p>
-                      <p className="text-sm text-muted-foreground">{event.date} · {event.venue} · {event.category}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {event.date} · {event.venue} · {event.category}
+                        {event.registration_fee > 0 ? ` · $${event.registration_fee}` : " · Free"}
+                      </p>
                     </div>
                     <Badge variant="outline" className={s.className}>
                       <Icon className="w-3.5 h-3.5 mr-1" />{s.label}

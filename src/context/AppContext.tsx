@@ -4,11 +4,26 @@ import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 export type Role = "admin" | "hod" | "student";
 
+export interface College {
+  id: string;
+  name: string;
+}
+
+export interface Venue {
+  id: string;
+  college_id: string;
+  name: string;
+  capacity: number;
+  facilities: string[];
+}
+
 export interface AppUser {
   id: string;
   email: string;
   fullName: string;
   role: Role | null;
+  college_id: string | null;
+  college_name?: string;
 }
 
 export interface Event {
@@ -16,25 +31,37 @@ export interface Event {
   title: string;
   date: string;
   venue: string;
+  venue_id: string;
   category: string;
   requested_by: string;
   requester_name?: string;
   status: "pending" | "approved" | "rejected";
+  college_id: string;
+  registration_fee: number;
+  max_capacity: number;
+  external_link?: string;
+  registration_count?: number;
 }
 
 interface AppContextType {
   user: AppUser | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string, role: Role) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, fullName: string, role: Role, collegeId: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  colleges: College[];
   events: Event[];
+  venues: Venue[];
   refreshEvents: () => Promise<void>;
-  addEvent: (event: { title: string; date: string; venue: string; category: string }) => Promise<{ success: boolean; message: string }>;
+  refreshVenues: () => Promise<void>;
+  addEvent: (event: { title: string; date: string; venue_id: string; category: string; registration_fee: number; max_capacity: number; external_link?: string }) => Promise<{ success: boolean; message: string }>;
   updateEventStatus: (id: string, status: "approved" | "rejected") => Promise<void>;
+  addVenue: (venue: { name: string; capacity: number; facilities: string[] }) => Promise<{ success: boolean; message: string }>;
+  deleteVenue: (id: string) => Promise<void>;
   registrations: string[];
-  registerForEvent: (eventId: string) => Promise<void>;
+  registerForEvent: (eventId: string, phone: string, semester: string, paymentStatus: string) => Promise<{ registrationId: string | null }>;
   isRegistered: (eventId: string) => boolean;
+  getRegistrationCount: (eventId: string) => number;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -48,20 +75,39 @@ export const useApp = () => {
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [colleges, setColleges] = useState<College[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [venues, setVenues] = useState<Venue[]>([]);
   const [registrations, setRegistrations] = useState<string[]>([]);
+  const [regCounts, setRegCounts] = useState<Record<string, number>>({});
+
+  // Load colleges on mount
+  useEffect(() => {
+    supabase.from("colleges").select("id, name").then(({ data }) => {
+      if (data) setColleges(data);
+    });
+  }, []);
 
   const loadUserProfile = useCallback(async (supaUser: SupabaseUser) => {
     const [profileRes, roleRes] = await Promise.all([
-      supabase.from("profiles").select("full_name").eq("user_id", supaUser.id).single(),
+      supabase.from("profiles").select("full_name, college_id").eq("user_id", supaUser.id).single(),
       supabase.from("user_roles").select("role").eq("user_id", supaUser.id).single(),
     ]);
+
+    const collegeId = profileRes.data?.college_id;
+    let collegeName = "";
+    if (collegeId) {
+      const { data: c } = await supabase.from("colleges").select("name").eq("id", collegeId).single();
+      collegeName = c?.name || "";
+    }
 
     setUser({
       id: supaUser.id,
       email: supaUser.email || "",
       fullName: profileRes.data?.full_name || supaUser.email || "",
       role: (roleRes.data?.role as Role) || null,
+      college_id: collegeId || null,
+      college_name: collegeName,
     });
   }, []);
 
@@ -85,15 +131,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => subscription.unsubscribe();
   }, [loadUserProfile]);
 
-  const signUp = async (email: string, password: string, fullName: string, role: Role) => {
+  const signUp = async (email: string, password: string, fullName: string, role: Role, collegeId: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: { data: { full_name: fullName, college_id: collegeId } },
     });
     if (error) return { error: error.message };
     if (data.user) {
-      // Assign role
       await supabase.from("user_roles").insert({ user_id: data.user.id, role });
     }
     return { error: null };
@@ -109,13 +154,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await supabase.auth.signOut();
     setUser(null);
     setEvents([]);
+    setVenues([]);
     setRegistrations([]);
   };
+
+  const refreshVenues = useCallback(async () => {
+    const { data } = await supabase.from("venues").select("*").order("name");
+    if (data) setVenues(data as unknown as Venue[]);
+  }, []);
 
   const refreshEvents = useCallback(async () => {
     const { data } = await supabase
       .from("events")
-      .select("*, profiles!events_requested_by_fkey(full_name)")
+      .select("*, venues(name), profiles!events_requested_by_fkey(full_name)")
       .order("created_at", { ascending: false });
 
     if (data) {
@@ -124,47 +175,64 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           id: e.id,
           title: e.title,
           date: e.date,
-          venue: e.venue,
+          venue: (e.venues as any)?.name || e.venue || "Unknown",
+          venue_id: e.venue_id || "",
           category: e.category,
           requested_by: e.requested_by,
-          requester_name: e.profiles?.full_name || "Unknown",
+          requester_name: (e.profiles as any)?.full_name || "Unknown",
           status: e.status as "pending" | "approved" | "rejected",
+          college_id: e.college_id,
+          registration_fee: Number(e.registration_fee) || 0,
+          max_capacity: e.max_capacity || 100,
+          external_link: e.external_link,
         }))
       );
     }
+
+    // Fetch registration counts
+    const { data: regData } = await supabase.from("registrations").select("event_id");
+    if (regData) {
+      const counts: Record<string, number> = {};
+      regData.forEach((r: any) => {
+        counts[r.event_id] = (counts[r.event_id] || 0) + 1;
+      });
+      setRegCounts(counts);
+    }
   }, []);
 
-  // Load registrations for current user
   const refreshRegistrations = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("registrations")
-      .select("event_id")
-      .eq("student_id", user.id);
+    const { data } = await supabase.from("registrations").select("event_id").eq("student_id", user.id);
     if (data) setRegistrations(data.map((r) => r.event_id));
   }, [user]);
 
   useEffect(() => {
     if (user) {
       refreshEvents();
+      refreshVenues();
       refreshRegistrations();
     }
-  }, [user, refreshEvents, refreshRegistrations]);
+  }, [user, refreshEvents, refreshVenues, refreshRegistrations]);
 
-  const addEvent = async (event: { title: string; date: string; venue: string; category: string }) => {
-    if (!user) return { success: false, message: "Not authenticated" };
+  const addEvent = async (event: { title: string; date: string; venue_id: string; category: string; registration_fee: number; max_capacity: number; external_link?: string }) => {
+    if (!user || !user.college_id) return { success: false, message: "Not authenticated" };
 
     const { error } = await supabase.from("events").insert({
       title: event.title,
       date: event.date,
-      venue: event.venue,
+      venue_id: event.venue_id,
+      venue: "", // legacy column
       category: event.category,
       requested_by: user.id,
+      college_id: user.college_id,
+      registration_fee: event.registration_fee,
+      max_capacity: event.max_capacity,
+      external_link: event.external_link || null,
     });
 
     if (error) {
       if (error.code === "23505") {
-        return { success: false, message: `Venue Conflict: "${event.venue}" is already booked on ${event.date}. Please choose another slot.` };
+        return { success: false, message: `Venue Conflict: This venue is already booked on ${event.date}. Please choose another slot.` };
       }
       return { success: false, message: error.message };
     }
@@ -178,17 +246,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await refreshEvents();
   };
 
-  const registerForEvent = async (eventId: string) => {
-    if (!user) return;
-    await supabase.from("registrations").insert({ event_id: eventId, student_id: user.id });
+  const addVenue = async (venue: { name: string; capacity: number; facilities: string[] }) => {
+    if (!user || !user.college_id) return { success: false, message: "Not authenticated" };
+    const { error } = await supabase.from("venues").insert({
+      name: venue.name,
+      capacity: venue.capacity,
+      facilities: venue.facilities,
+      college_id: user.college_id,
+    });
+    if (error) return { success: false, message: error.message };
+    await refreshVenues();
+    return { success: true, message: "Venue added!" };
+  };
+
+  const deleteVenue = async (id: string) => {
+    await supabase.from("venues").delete().eq("id", id);
+    await refreshVenues();
+  };
+
+  const registerForEvent = async (eventId: string, phone: string, semester: string, paymentStatus: string) => {
+    if (!user) return { registrationId: null };
+    const { data, error } = await supabase.from("registrations").insert({
+      event_id: eventId,
+      student_id: user.id,
+      phone,
+      semester,
+      payment_status: paymentStatus,
+    }).select("id").single();
+    if (error) return { registrationId: null };
     await refreshRegistrations();
+    await refreshEvents();
+    return { registrationId: data?.id || null };
   };
 
   const isRegistered = (eventId: string) => registrations.includes(eventId);
+  const getRegistrationCount = (eventId: string) => regCounts[eventId] || 0;
 
   return (
     <AppContext.Provider
-      value={{ user, loading, signUp, signIn, signOut, events, refreshEvents, addEvent, updateEventStatus, registrations, registerForEvent, isRegistered }}
+      value={{
+        user, loading, signUp, signIn, signOut,
+        colleges, events, venues,
+        refreshEvents, refreshVenues,
+        addEvent, updateEventStatus,
+        addVenue, deleteVenue,
+        registrations, registerForEvent, isRegistered, getRegistrationCount,
+      }}
     >
       {children}
     </AppContext.Provider>

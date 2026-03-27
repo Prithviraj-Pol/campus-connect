@@ -1,4 +1,4 @@
-import { LogOut } from "lucide-react";
+import { LogOut, Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useApp } from "@/context/AppContext";
@@ -14,6 +14,11 @@ const AppHeader = () => {
         </h1>
         {user && (
           <div className="flex items-center gap-3">
+            {user.college_name && (
+              <span className="text-primary-foreground/70 text-xs font-medium hidden md:flex items-center gap-1">
+                <Building className="w-3 h-3" /> {user.college_name}
+              </span>
+            )}
             <span className="text-primary-foreground/80 text-sm font-medium hidden sm:inline">
               {user.fullName}
             </span>
