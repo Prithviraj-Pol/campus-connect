@@ -62,6 +62,8 @@ interface AppContextType {
   registerForEvent: (eventId: string, phone: string, semester: string, paymentStatus: string) => Promise<{ registrationId: string | null }>;
   isRegistered: (eventId: string) => boolean;
   getRegistrationCount: (eventId: string) => number;
+  resetPassword: (email: string) => Promise<{ error: string | null }>;
+
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -170,18 +172,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .order("created_at", { ascending: false });
 
     if (data) {
+      type RawEvent = {
+        id: string;
+        title: string;
+        date: string;
+        venues?: { name?: string };
+        venue?: string;
+        venue_id?: string;
+        category?: string;
+        requested_by?: string;
+        profiles?: { full_name?: string };
+        status?: "pending" | "approved" | "rejected";
+        college_id?: string;
+        registration_fee?: string | number;
+        max_capacity?: number;
+        external_link?: string;
+      };
+
+      const eventsData = data as RawEvent[];
+
       setEvents(
-        data.map((e: any) => ({
+        eventsData.map((e) => ({
           id: e.id,
           title: e.title,
           date: e.date,
-          venue: (e.venues as any)?.name || e.venue || "Unknown",
+          venue: e.venues?.name || e.venue || "Unknown",
           venue_id: e.venue_id || "",
-          category: e.category,
-          requested_by: e.requested_by,
-          requester_name: (e.profiles as any)?.full_name || "Unknown",
-          status: e.status as "pending" | "approved" | "rejected",
-          college_id: e.college_id,
+          category: e.category || "",
+          requested_by: e.requested_by || "",
+          requester_name: e.profiles?.full_name || "Unknown",
+          status: e.status || "pending",
+          college_id: e.college_id || "",
           registration_fee: Number(e.registration_fee) || 0,
           max_capacity: e.max_capacity || 100,
           external_link: e.external_link,
@@ -193,7 +214,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { data: regData } = await supabase.from("registrations").select("event_id");
     if (regData) {
       const counts: Record<string, number> = {};
-      regData.forEach((r: any) => {
+      const regDataTyped = regData as Array<{ event_id: string }>;
+      regDataTyped.forEach((r) => {
         counts[r.event_id] = (counts[r.event_id] || 0) + 1;
       });
       setRegCounts(counts);
@@ -282,7 +304,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const isRegistered = (eventId: string) => registrations.includes(eventId);
   const getRegistrationCount = (eventId: string) => regCounts[eventId] || 0;
 
+  // added forgot pwd quick - sends reset link, check spam too
+  const resetPassword = async (emailStr: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(emailStr, {
+      redirectTo: `${window.location.origin}/login`, // hacky, use env later
+    });
+    if (error) return { error: error.message };
+    return { error: null };
+  };
+
   return (
+
     <AppContext.Provider
       value={{
         user, loading, signUp, signIn, signOut,
@@ -290,7 +322,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         refreshEvents, refreshVenues,
         addEvent, updateEventStatus,
         addVenue, deleteVenue,
-        registrations, registerForEvent, isRegistered, getRegistrationCount,
+        registrations, registerForEvent, isRegistered, getRegistrationCount, resetPassword,
+
       }}
     >
       {children}

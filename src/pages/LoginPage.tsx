@@ -6,11 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const LoginPage = () => {
-  const { signIn, signUp, colleges } = useApp();
+  const { signIn, signUp, colleges, resetPassword } = useApp();
   const { toast } = useToast();
   const [tab, setTab] = useState("signin");
 
@@ -22,8 +22,24 @@ const LoginPage = () => {
   const [suEmail, setSuEmail] = useState("");
   const [suPassword, setSuPassword] = useState("");
   const [suRole, setSuRole] = useState<Role | "">("");
-  const [suCollege, setSuCollege] = useState("");
   const [signingUp, setSigningUp] = useState(false);
+
+  // forgot pwd state n handler - simple email reset via supabase
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [sendingReset, setSendingReset] = useState(false);
+
+  const handleReset = async () => {
+    if (!forgotEmail) return;
+    setSendingReset(true);
+    const { error } = await resetPassword(forgotEmail);
+    setSendingReset(false);
+    if (error) {
+      toast({ title: "Failed to send reset", description: error, variant: "destructive" });
+    } else {
+      toast({ title: "Reset email sent!", description: "Check inbox/spam folder for link (leads back to login)." });
+      setForgotEmail(""); // clear for next
+    }
+  };
 
   const handleSignIn = async () => {
     if (!email || !password) return;
@@ -34,9 +50,9 @@ const LoginPage = () => {
   };
 
   const handleSignUp = async () => {
-    if (!suName || !suEmail || !suPassword || !suRole || !suCollege) return;
+    if (!suName || !suEmail || !suPassword || !suRole) return;
     setSigningUp(true);
-    const { error } = await signUp(suEmail, suPassword, suName, suRole as Role, suCollege);
+    const { error } = await signUp(suEmail, suPassword, suName, suRole as Role, "");
     setSigningUp(false);
     if (error) {
       toast({ title: "Sign up failed", description: error, variant: "destructive" });
@@ -66,9 +82,10 @@ const LoginPage = () => {
           </CardHeader>
           <CardContent className="pt-4">
             <Tabs value={tab} onValueChange={setTab}>
-              <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsList className="grid w-full grid-cols-3 mb-4">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="forgot">Forgot?</TabsTrigger>
               </TabsList>
 
               <TabsContent value="signin" className="space-y-4">
@@ -83,20 +100,29 @@ const LoginPage = () => {
                 <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold shadow-md" onClick={handleSignIn} disabled={signingIn || !email || !password}>
                   {signingIn ? "Signing in..." : "Sign In"}
                 </Button>
+                <Button variant="link" className="w-full text-xs p-0 h-auto text-muted-foreground hover:text-primary justify-start" onClick={() => setTab("forgot")}>
+                  Forgot password?
+                </Button>
+              </TabsContent>
+
+              <TabsContent value="forgot" className="space-y-4">
+                <p className="text-sm text-muted-foreground">We'll send a password reset link to your email.</p>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 text-muted-foreground w-4 h-4 pointer-events-none" />
+                    <Input className="pl-10" type="email" placeholder="you@college.edu" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleReset()} />
+                  </div>
+                </div>
+                <Button className="w-full" variant="default" onClick={handleReset} disabled={sendingReset || !forgotEmail}>
+                  {sendingReset ? "Sending link..." : "Send Reset Link"}
+                </Button>
+                <Button variant="link" className="w-full text-xs p-0 h-auto justify-start" onClick={() => setTab("signin")}>
+                  ← Back to sign in
+                </Button>
               </TabsContent>
 
               <TabsContent value="signup" className="space-y-4">
-                <div className="space-y-2">
-                  <Label>College</Label>
-                  <Select value={suCollege} onValueChange={setSuCollege}>
-                    <SelectTrigger><SelectValue placeholder="Select your college" /></SelectTrigger>
-                    <SelectContent>
-                      {colleges.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="space-y-2">
                   <Label>Full Name</Label>
                   <Input placeholder="Your full name" value={suName} onChange={(e) => setSuName(e.target.value)} />
@@ -120,7 +146,7 @@ const LoginPage = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold shadow-md" onClick={handleSignUp} disabled={signingUp || !suName || !suEmail || !suPassword || !suRole || !suCollege}>
+                <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold shadow-md" onClick={handleSignUp} disabled={signingUp || !suName || !suEmail || !suPassword || !suRole}>
                   {signingUp ? "Creating account..." : "Create Account"}
                 </Button>
               </TabsContent>
