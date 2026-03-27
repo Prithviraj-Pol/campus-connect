@@ -66,6 +66,10 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        adminWhite: '#F8FAFC',
+        adminBlue: '#1E3A8A',
+        adminOrange: '#F97316',
+        adminOrangeFg: 'white',
       },
       borderRadius: {
         lg: "var(--radius)",
