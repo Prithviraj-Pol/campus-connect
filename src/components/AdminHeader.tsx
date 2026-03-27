@@ -1,7 +1,7 @@
 import { LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useApp } from "@/context/AppContext";
+import { useApp } from "@/context/FakeAppContext";
 
 const AdminHeader = () => {
   const { user, signOut } = useApp();

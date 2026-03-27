@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useApp, Role } from "@/context/AppContext";
+import { useApp, Role } from "@/context/FakeAppContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

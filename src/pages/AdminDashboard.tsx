@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useApp } from "@/context/AppContext";
+import { useApp } from "@/context/FakeAppContext";
 import AdminHeader from "@/components/AdminHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

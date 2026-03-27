@@ -1,4 +1,4 @@
-import { useApp } from "@/context/AppContext";
+import { useApp } from "@/context/FakeAppContext";
 import LoginPage from "./LoginPage";
 import StudentPortal from "./StudentPortal";
 import HODDashboard from "./HODDashboard";
