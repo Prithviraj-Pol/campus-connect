@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useApp, Role } from "@/context/AppContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,20 +10,19 @@ import { GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const LoginPage = () => {
-  const { signIn, signUp } = useApp();
+  const { signIn, signUp, colleges } = useApp();
   const { toast } = useToast();
   const [tab, setTab] = useState("signin");
 
-  // Sign in state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
 
-  // Sign up state
   const [suName, setSuName] = useState("");
   const [suEmail, setSuEmail] = useState("");
   const [suPassword, setSuPassword] = useState("");
   const [suRole, setSuRole] = useState<Role | "">("");
+  const [suCollege, setSuCollege] = useState("");
   const [signingUp, setSigningUp] = useState(false);
 
   const handleSignIn = async () => {
@@ -35,9 +34,9 @@ const LoginPage = () => {
   };
 
   const handleSignUp = async () => {
-    if (!suName || !suEmail || !suPassword || !suRole) return;
+    if (!suName || !suEmail || !suPassword || !suRole || !suCollege) return;
     setSigningUp(true);
-    const { error } = await signUp(suEmail, suPassword, suName, suRole as Role);
+    const { error } = await signUp(suEmail, suPassword, suName, suRole as Role, suCollege);
     setSigningUp(false);
     if (error) {
       toast({ title: "Sign up failed", description: error, variant: "destructive" });
@@ -62,7 +61,7 @@ const LoginPage = () => {
             </div>
             <CardTitle className="text-2xl font-extrabold text-primary">Welcome to CampusSync</CardTitle>
             <CardDescription className="text-muted-foreground">
-              Manage college events seamlessly.
+              Multi-tenant college event management.
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
@@ -81,16 +80,23 @@ const LoginPage = () => {
                   <Label>Password</Label>
                   <Input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSignIn()} />
                 </div>
-                <Button
-                  className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold shadow-md"
-                  onClick={handleSignIn}
-                  disabled={signingIn || !email || !password}
-                >
+                <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold shadow-md" onClick={handleSignIn} disabled={signingIn || !email || !password}>
                   {signingIn ? "Signing in..." : "Sign In"}
                 </Button>
               </TabsContent>
 
               <TabsContent value="signup" className="space-y-4">
+                <div className="space-y-2">
+                  <Label>College</Label>
+                  <Select value={suCollege} onValueChange={setSuCollege}>
+                    <SelectTrigger><SelectValue placeholder="Select your college" /></SelectTrigger>
+                    <SelectContent>
+                      {colleges.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2">
                   <Label>Full Name</Label>
                   <Input placeholder="Your full name" value={suName} onChange={(e) => setSuName(e.target.value)} />
@@ -106,9 +112,7 @@ const LoginPage = () => {
                 <div className="space-y-2">
                   <Label>Role</Label>
                   <Select value={suRole} onValueChange={(v) => setSuRole(v as Role)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose your role" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Choose your role" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="student">🎓 Student</SelectItem>
                       <SelectItem value="hod">🏛️ HOD</SelectItem>
@@ -116,11 +120,7 @@ const LoginPage = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button
-                  className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold shadow-md"
-                  onClick={handleSignUp}
-                  disabled={signingUp || !suName || !suEmail || !suPassword || !suRole}
-                >
+                <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold shadow-md" onClick={handleSignUp} disabled={signingUp || !suName || !suEmail || !suPassword || !suRole || !suCollege}>
                   {signingUp ? "Creating account..." : "Create Account"}
                 </Button>
               </TabsContent>

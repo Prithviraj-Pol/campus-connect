@@ -14,44 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
+      colleges: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           category: string
+          college_id: string | null
           created_at: string
           date: string
+          external_link: string | null
           id: string
+          max_capacity: number
+          registration_fee: number
           requested_by: string
           status: string
           title: string
           updated_at: string
           venue: string
+          venue_id: string | null
         }
         Insert: {
           category: string
+          college_id?: string | null
           created_at?: string
           date: string
+          external_link?: string | null
           id?: string
+          max_capacity?: number
+          registration_fee?: number
           requested_by: string
           status?: string
           title: string
           updated_at?: string
           venue: string
+          venue_id?: string | null
         }
         Update: {
           category?: string
+          college_id?: string | null
           created_at?: string
           date?: string
+          external_link?: string | null
           id?: string
+          max_capacity?: number
+          registration_fee?: number
           requested_by?: string
           status?: string
           title?: string
           updated_at?: string
           venue?: string
+          venue_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "events_college_id_fkey"
+            columns: ["college_id"]
+            isOneToOne: false
+            referencedRelation: "colleges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
+          college_id: string | null
           created_at: string
           full_name: string
           id: string
@@ -59,6 +108,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          college_id?: string | null
           created_at?: string
           full_name: string
           id?: string
@@ -66,31 +116,49 @@ export type Database = {
           user_id: string
         }
         Update: {
+          college_id?: string | null
           created_at?: string
           full_name?: string
           id?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_college_id_fkey"
+            columns: ["college_id"]
+            isOneToOne: false
+            referencedRelation: "colleges"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       registrations: {
         Row: {
           created_at: string
           event_id: string
           id: string
+          payment_status: string
+          phone: string | null
+          semester: string | null
           student_id: string
         }
         Insert: {
           created_at?: string
           event_id: string
           id?: string
+          payment_status?: string
+          phone?: string | null
+          semester?: string | null
           student_id: string
         }
         Update: {
           created_at?: string
           event_id?: string
           id?: string
+          payment_status?: string
+          phone?: string | null
+          semester?: string | null
           student_id?: string
         }
         Relationships: [
@@ -121,11 +189,47 @@ export type Database = {
         }
         Relationships: []
       }
+      venues: {
+        Row: {
+          capacity: number
+          college_id: string
+          created_at: string
+          facilities: string[]
+          id: string
+          name: string
+        }
+        Insert: {
+          capacity?: number
+          college_id: string
+          created_at?: string
+          facilities?: string[]
+          id?: string
+          name: string
+        }
+        Update: {
+          capacity?: number
+          college_id?: string
+          created_at?: string
+          facilities?: string[]
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venues_college_id_fkey"
+            columns: ["college_id"]
+            isOneToOne: false
+            referencedRelation: "colleges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      get_user_college_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
