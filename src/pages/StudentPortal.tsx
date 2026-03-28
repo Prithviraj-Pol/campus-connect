@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useApp } from "@/context/FakeAppContext";
+import { useApp, Event } from "@/context/FakeAppContext";
 import AppHeader from "@/components/AppHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,10 +19,10 @@ import { cn } from "@/lib/utils";
 const CATEGORIES = ["All", "Technical", "Cultural", "Sports"];
 
 const StudentPortal = () => {
-  const { user, events, registerForEvent, isRegistered, getRegistrationCount, getRegistrationsForEvent, getStudentCertificates } = useApp();
+  const { user, events, registrations, registerForEvent, isRegistered, getRegistrationCount, getRegistrationsForEvent, getStudentCertificates } = useApp();
   const { toast } = useToast();
   const [filter, setFilter] = useState("All");
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [phone, setPhone] = useState("");
   const [semester, setSemester] = useState("");
   const [registering, setRegistering] = useState(false);
@@ -31,15 +31,15 @@ const StudentPortal = () => {
   // NEW: Split logic for personalization
   const approvedEvents = events.filter(e => e.status === "approved" && (filter === "All" || e.category === filter));
   const recommendedEvents = approvedEvents.filter(e => 
-    user?.interests && user.interests.some((interest: string) => interest === e.category)
+    Boolean(user?.interests?.some((interest) => interest === e.category))
   );
   const otherEvents = approvedEvents.filter(e => 
     !recommendedEvents.some(r => r.id === e.id)
   );
 
-  const userRegistrations = getRegistrationsForEvent('e3').filter((r: any) => r.student_id === user?.id); // Pre-set r1 for student1
+  const userRegistrations = user ? registrations.filter(r => r.student_id === user.id) : [];
   const isCoordinatorForEvent = (eventId: string) => 
-    userRegistrations.some((r: any) => r.event_id === eventId && r.student_id === user?.id && r.is_coordinator);
+    userRegistrations.some(r => r.event_id === eventId && r.is_coordinator);
 
   const handleRegister = async () => {
     if (!selectedEvent || !phone || !semester) return;
@@ -275,7 +275,7 @@ const StudentPortal = () => {
 
 // NEW: Reusable EventCard component
 interface EventCardProps {
-  event: any;
+  event: Event;
   registered: boolean;
   seatsLeft: number;
   onRegister: () => void;
@@ -348,11 +348,11 @@ const EventCard: React.FC<EventCardProps> = ({ event, registered, seatsLeft, onR
         )}
         
         {/* NEW: Coordinator Button */}
-{isCoordinator && (
+        {isCoordinator && (
           <Button 
             variant="outline" 
             className="w-full bg-gradient-to-r from-orange-50 to-amber-50 border-orange-300 hover:bg-orange-50 text-orange-700 font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2"
-            onClick={() => openCoordinatorTools(event.id)}
+            onClick={onCoordinatorTools}
           >
             <Wrench className="w-4 h-4" />
             Coordinator Tools

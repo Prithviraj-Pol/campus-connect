@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useApp } from "@/context/FakeAppContext";
 import AdminHeader from "@/components/AdminHeader";
+import NotificationBoard from "@/components/NotificationBoard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

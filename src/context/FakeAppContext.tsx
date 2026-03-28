@@ -97,7 +97,7 @@ interface AppContextType {
   getRegistrationsForEvent: (eventId: string) => Registration[]; // NEW
   toggleCoordinator: (regId: string) => void; // NEW
   updateAttendance: (regId: string, status: 'pending' | 'present' | 'absent') => void; // NEW
-  postNotification: (notif: Omit<Notification, 'id' | 'timestamp'>) => Promise<void>;
+  postNotification: (notif: Omit<Notification, 'id' | 'timestamp' | 'sender_id'>) => Promise<void>;
   getNotifications: (audience: string) => Notification[];
   getStudentCertificates: (studentId: string) => Certificate[];
   issueCertificate: (cert: Omit<Certificate, 'id'>) => Promise<void>;
