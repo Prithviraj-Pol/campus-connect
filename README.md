@@ -76,4 +76,4 @@ npm install
 # MONGO_URI=your_mongodb_connection_string
 
 # Run the development server
-npm run dev
+npm run dev....
