@@ -11,12 +11,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Calendar, MapPin, Tag, CheckCircle2, PartyPopper, DollarSign, Users, Star, Wrench } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AttendanceTracker from "@/components/AttendanceTracker";
+import NotificationBoard from "@/components/NotificationBoard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const CATEGORIES = ["All", "Technical", "Cultural", "Sports"];
 
 const StudentPortal = () => {
-  const { user, events, registerForEvent, isRegistered, getRegistrationCount, getRegistrationsForEvent } = useApp();
+  const { user, events, registerForEvent, isRegistered, getRegistrationCount, getRegistrationsForEvent, getStudentCertificates } = useApp();
   const { toast } = useToast();
   const [filter, setFilter] = useState("All");
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
@@ -63,7 +66,8 @@ const StudentPortal = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50/80 to-white"> {/* Soft white */}
-      <AppHeader />
+<AppHeader />
+      <NotificationBoard />
       <div className="max-w-6xl mx-auto px-6 py-10">
         {/* Welcome Header */}
         <div className="text-center mb-12 animate-fade-in">
@@ -118,28 +122,97 @@ const StudentPortal = () => {
           </Select>
         </div>
 
-        {otherEvents.length === 0 && recommendedEvents.length === 0 ? (
-          <div className="text-center py-20">
-            <PartyPopper className="w-16 h-16 text-slate-300 mx-auto mb-6" />
-            <h4 className="text-2xl font-bold text-slate-600 mb-2">No events yet!</h4>
-            <p className="text-slate-500 text-lg max-w-md mx-auto">Check back soon for exciting campus events. Your recommendations will appear here.</p>
-          </div>
-        ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {otherEvents.map((event, i) => (
-              <EventCard 
-                key={event.id} 
-                event={event} 
-                registered={isRegistered(event.id)}
-                seatsLeft={event.max_capacity - getRegistrationCount(event.id)}
-                onRegister={() => setSelectedEvent(event)}
-                isCoordinator={isCoordinatorForEvent(event.id)}
-                onCoordinatorTools={() => openCoordinatorTools(event.id)}
-                i={recommendedEvents.length + i}
-              />
-            ))}
-          </div>
-        )}
+        <Tabs defaultValue="events" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-xl p-1 mb-8 shadow-md">
+            <TabsTrigger value="events" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-royalBlue font-semibold">
+              Upcoming Events
+            </TabsTrigger>
+            <TabsTrigger value="certificates" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-royalBlue font-semibold">
+              My Certificates
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="events">
+            {otherEvents.length === 0 && recommendedEvents.length === 0 ? (
+              <div className="text-center py-20">
+                <PartyPopper className="w-16 h-16 text-slate-300 mx-auto mb-6" />
+                <h4 className="text-2xl font-bold text-slate-600 mb-2">No events yet!</h4>
+                <p className="text-slate-500 text-lg max-w-md mx-auto">Check back soon for exciting campus events. Your recommendations will appear here.</p>
+              </div>
+            ) : (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {otherEvents.map((event, i) => (
+                  <EventCard 
+                    key={event.id} 
+                    event={event} 
+                    registered={isRegistered(event.id)}
+                    seatsLeft={event.max_capacity - getRegistrationCount(event.id)}
+                    onRegister={() => setSelectedEvent(event)}
+                    isCoordinator={isCoordinatorForEvent(event.id)}
+                    onCoordinatorTools={() => openCoordinatorTools(event.id)}
+                    i={recommendedEvents.length + i}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+          <TabsContent value="certificates" className="space-y-6">
+            <Card className="shadow-lg border-0 bg-gradient-to-br from-orange-50/50 to-white/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-royalBlue flex items-center gap-3 text-2xl">
+                  🏆 My Certificates
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {getStudentCertificates(user?.id || '').length === 0 ? (
+                  <div className="text-center py-16">
+                    <Download className="w-16 h-16 text-slate-300 mx-auto mb-6" />
+                    <h4 className="text-xl font-bold text-slate-600 mb-2">No certificates yet</h4>
+                    <p className="text-slate-500 max-w-md mx-auto">Complete events to earn certificates. Check back after events end.</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {getStudentCertificates(user?.id || '').map((cert) => {
+                      const event = events.find(e => e.id === cert.event_id);
+                      if (!event || new Date(event.date) > new Date()) return null;
+                      return (
+                        <Card key={cert.id} className="shadow-md hover:shadow-lg transition-all border-orange-200 bg-gradient-to-r from-orange-50 to-white">
+                          <CardContent className="p-6 flex items-center justify-between">
+                            <div>
+                              <h4 className="font-bold text-lg text-royalBlue mb-1">{event?.title}</h4>
+                              <div className="flex items-center gap-4 text-sm text-slate-600">
+                                <span>Issued: {new Date(cert.issue_date).toLocaleDateString()}</span>
+                                <Badge className={`font-semibold ${cert.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                  {cert.status}
+                                </Badge>
+                              </div>
+                            </div>
+                            <Button 
+                              onClick={() => {
+                                // Mock PDF download
+                                const pdfUrl = 'data:application/pdf;base64,JVBERi0xLjQKJcOkw7zDtMKNwjY6vkKmt4...'; // Mock base64
+                                const link = document.createElement('a');
+                                link.href = pdfUrl;
+                                link.download = `${event?.title.replace(/[^a-z0-9]/gi, '_')}_certificate.pdf`;
+                                link.click();
+                                toast({ title: '📄 Certificate Downloaded!', description: 'Check your downloads folder.' });
+                              }}
+                              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold shadow-xl flex items-center gap-2 px-6 py-6 rounded-xl hover:shadow-2xl transition-all"
+                              disabled={cert.status === 'pending'}
+                            >
+                              <Download className="w-5 h-5" />
+                              {cert.status === 'available' ? 'Download Certificate' : 'Pending'}
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      );
+                    }).filter(Boolean)}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
       </div>
 
       {/* Registration Dialog - unchanged */}

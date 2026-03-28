@@ -53,8 +53,27 @@ export interface Registration { // NEW
   attendance_status: 'pending' | 'present' | 'absent';
 }
 
+export interface Notification {
+  id: string;
+  sender_id: string;
+  audience: 'all' | 'students' | 'hods';
+  title: string;
+  message: string;
+  external_link?: string;
+  timestamp: string;
+}
+
+export interface Certificate {
+  id: string;
+  student_id: string;
+  event_id: string;
+  issue_date: string;
+  status: 'available' | 'pending';
+}
+
 interface AppContextType {
   user: AppUser | null;
+  globalCollegeName: string;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string, role: Role, collegeId: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -62,6 +81,8 @@ interface AppContextType {
   colleges: College[];
   events: Event[];
   venues: Venue[];
+  notifications: Notification[];
+  certificates: Certificate[];
   refreshEvents: () => Promise<void>;
   refreshVenues: () => Promise<void>;
   addEvent: (event: { title: string; date: string; venue_id: string; category: string; registration_fee: number; max_capacity: number; external_link?: string }) => Promise<{ success: boolean; message: string }>;
@@ -76,6 +97,12 @@ interface AppContextType {
   getRegistrationsForEvent: (eventId: string) => Registration[]; // NEW
   toggleCoordinator: (regId: string) => void; // NEW
   updateAttendance: (regId: string, status: 'pending' | 'present' | 'absent') => void; // NEW
+  postNotification: (notif: Omit<Notification, 'id' | 'timestamp'>) => Promise<void>;
+  getNotifications: (audience: string) => Notification[];
+  getStudentCertificates: (studentId: string) => Certificate[];
+  issueCertificate: (cert: Omit<Certificate, 'id'>) => Promise<void>;
+  updateUserCollegeName: (collegeName: string) => void;
+  updateUserDepartment: (department: string) => void;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
 }
 
@@ -117,6 +144,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     e4: 25,
     e5: 35
   });
+
+  const [notifications, setNotifications] = useState<Notification[]>([
+    {
+      id: 'n1',
+      sender_id: 'admin1',
+      audience: 'all',
+      title: 'Tech Fest Rules Updated',
+      message: 'Please note new registration deadlines. Check details below.',
+      external_link: 'https://forms.gle/example',
+      timestamp: new Date(Date.now() - 86400000).toISOString() // yesterday
+    },
+    {
+      id: 'n2',
+      sender_id: 'hod1',
+      audience: 'students',
+      title: 'Cultural Night Rehearsal',
+      message: 'Mandatory rehearsal tomorrow at 5 PM in Main Auditorium.',
+      timestamp: new Date().toISOString()
+    }
+  ]);
+
+  const [certificates, setCertificates] = useState<Certificate[]>([
+    {
+      id: 'c1',
+      student_id: 'student1',
+      event_id: 'e1',
+      issue_date: '2024-04-16',
+      status: 'available'
+    },
+    // More for demo
+    {
+      id: 'c2',
+      student_id: 'student1',
+      event_id: 'e5',
+      issue_date: '2024-05-03',
+      status: 'pending'
+    }
+  ]);
+
+  const [globalCollegeName, setGlobalCollegeName] = useState<string>('Campus College');
 
   // Fake users - email as key - UPDATED
   const FAKE_USERS: Record<string, Omit<AppUser, 'email'>> = {
@@ -373,16 +440,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (user) loadFakeData();
   }, [user, loadFakeData]);
 
+  // Phase 1 Step 3: Context functions
+  const postNotification = async (notif: Omit<Notification, 'id' | 'timestamp'>) => {
+    if (!user || (user.role !== 'admin' && user.role !== 'hod')) return;
+    const newNotif: Notification = {
+      ...notif,
+      id: 'n' + Date.now(),
+      timestamp: new Date().toISOString(),
+      sender_id: user.id
+    };
+    setNotifications(prev => [newNotif, ...prev]);
+  };
+
+  const getNotifications = (audience: string): Notification[] => {
+    const role = user?.role;
+    const userAudience = role === 'admin' ? 'all' : role === 'hod' ? 'hods' : 'students';
+    return notifications.filter(n => n.audience === 'all' || n.audience === userAudience);
+  };
+
+  const getStudentCertificates = (studentId: string): Certificate[] => 
+    certificates.filter(c => c.student_id === studentId);
+
+  const issueCertificate = async (cert: Omit<Certificate, 'id'>) => {
+    const newCert: Certificate = {
+      ...cert,
+      id: 'c' + Date.now()
+    };
+    setCertificates(prev => [...prev, newCert]);
+  };
+
+  const updateUserCollegeName = (collegeName: string) => {
+    if (user?.role === 'admin') {
+      setGlobalCollegeName(collegeName);
+    }
+    if (user) {
+      setUser({ ...user, college_name: collegeName });
+      // Simulate updating FAKE_USERS
+      (FAKE_USERS as any)[user.email.toLowerCase()].college_name = collegeName;
+    }
+  };
+
+  const updateUserDepartment = (department: string) => {
+    if (user) {
+      setUser({ ...user, department });
+      // Simulate updating FAKE_USERS
+      (FAKE_USERS as any)[user.email.toLowerCase()].department = department;
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
-        user, loading, signUp, signIn, signOut,
-        colleges, events, venues, regCounts,
+        user, globalCollegeName, loading, signUp, signIn, signOut,
+        colleges, events, venues, notifications, certificates, regCounts,
         refreshEvents, refreshVenues,
         addEvent, updateEventStatus,
         addVenue, deleteVenue,
         registrations, registerForEvent, isRegistered, getRegistrationCount, 
-        getRegistrationsForEvent, toggleCoordinator, updateAttendance, // NEW
+        getRegistrationsForEvent, toggleCoordinator, updateAttendance,
+        postNotification, getNotifications, getStudentCertificates, issueCertificate,
+        updateUserCollegeName, updateUserDepartment,
         resetPassword,
       }}
     >

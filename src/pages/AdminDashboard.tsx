@@ -8,10 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, XCircle, Trash2, Calendar, MapPin, Users, Inbox, Building2, PlusCircle } from "lucide-react";
+import { CheckCircle2, XCircle, Trash2, Calendar, MapPin, Users, Inbox, Building2, PlusCircle, Bell } from "lucide-react";
+
 
 const AdminDashboard = () => {
-  const { user, loading: appLoading, events, venues, regCounts, updateEventStatus, addVenue, deleteVenue } = useApp();
+  const { user, globalCollegeName, loading: appLoading, events, venues, regCounts, updateEventStatus, addVenue, deleteVenue, updateUserCollegeName } = useApp();
   const { toast } = useToast();
 
   if (appLoading) {
@@ -70,7 +71,8 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-adminWhite">
-      <AdminHeader />
+<AdminHeader />
+      <NotificationBoard />
       <div className="max-w-7xl mx-auto px-6 py-10">
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
@@ -104,9 +106,10 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="pending" className="animate-fade-in-delay-1">
-          <TabsList className="grid w-full grid-cols-2 mb-8 bg-adminBlue/10 border-adminBlue/20">
+          <TabsList className="grid w-full grid-cols-3 mb-8 bg-adminBlue/10 border-adminBlue/20">
             <TabsTrigger value="pending" className="data-[state=active]:bg-adminBlue data-[state=active]:text-white data-[state=active]:shadow-md">Pending Events</TabsTrigger>
             <TabsTrigger value="venues" className="data-[state=active]:bg-adminBlue data-[state=active]:text-white data-[state=active]:shadow-md">Manage Venues</TabsTrigger>
+            <TabsTrigger value="settings" className="data-[state=active]:bg-adminBlue data-[state=active]:text-white data-[state=active]:shadow-md">Platform Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="pending">
@@ -191,6 +194,44 @@ const AdminDashboard = () => {
                   <Building2 className="w-5 h-5" /> Existing Venues
                 </CardTitle>
               </CardHeader>
+
+          <TabsContent value="settings">
+            <Card className="shadow-lg border-0">
+              <CardHeader>
+                <CardTitle className="text-adminBlue flex items-center gap-2">
+                  <Building2 className="w-5 h-5" /> Platform Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-8">
+                <div className="max-w-md space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-lg font-semibold text-adminBlue">College Name</Label>
+                    <p className="text-sm text-adminBlue/70 mb-4">Current: <span className="font-bold text-orange-600">{globalCollegeName || 'Campus College'}</span></p>
+                    <div className="space-y-2">
+                      <Input 
+                        placeholder="e.g. MIT Mysore" 
+                        defaultValue={globalCollegeName}
+                        className="text-lg py-6 border-2 border-adminBlue/30 focus:border-orange-500 focus:ring-orange-500"
+                      />
+                      <Button 
+                        onClick={() => {
+                          const newName = prompt('Enter new college name:') || globalCollegeName;
+                          updateUserCollegeName(newName);
+                          toast({ title: 'College Name Updated!', description: `Platform now uses "${newName}".` });
+                        }}
+                        className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold shadow-xl"
+                      >
+                        Update College Name
+                      </Button>
+                    </div>
+                    <p className="text-xs text-adminBlue/60 mt-4">
+                      Changes apply globally across the tenant.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
               <CardContent>
                 {venues.length === 0 ? (
                   <p className="text-adminBlue/60 text-center py-10">No venues yet. Add one above!</p>

@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { PlusCircle, Clock, CheckCircle2, XCircle, Users, Eye } from "lucide-react";
 import AttendanceTracker from "@/components/AttendanceTracker";
+import NotificationBoard from "@/components/NotificationBoard";
 
 const CATEGORIES = ["Technical", "Cultural", "Sports"];
 
@@ -22,7 +23,7 @@ const statusConfig = {
 };
 
 const HODDashboard = () => {
-  const { user, events, venues, addEvent, getRegistrationsForEvent, toggleCoordinator, updateAttendance, getRegistrationCount } = useApp();
+  const { user, events, venues, addEvent, getRegistrationsForEvent, toggleCoordinator, updateAttendance, getRegistrationCount, updateUserDepartment } = useApp();
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
@@ -71,7 +72,8 @@ const HODDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white"> {/* 60% soft white */}
-      <AppHeader />
+<AppHeader />
+      <NotificationBoard />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* NEW: Profile Header */}
         <Card className="bg-white/80 backdrop-blur-sm shadow-xl border-0 mb-10">
@@ -80,9 +82,33 @@ const HODDashboard = () => {
               👨‍🏫 HOD Dashboard
             </CardTitle>
             <Badge className="text-lg px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg border-0 font-semibold">
-              {user?.college_name} | {user?.department} Dept
+              {user?.college_name} | {user?.department || 'Your Department'} Dept
             </Badge>
           </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-4">
+              <Label className="text-lg font-semibold text-[#1E3A8A]">Department Name</Label>
+              <div className="flex gap-3">
+                <Input 
+                  placeholder="e.g. Artificial Intelligence and Data Science" 
+                  defaultValue={user?.department}
+                  className="flex-1"
+                />
+                <Button 
+                  onClick={() => {
+                    const newDept = prompt('Enter department name:') || '';
+                    if (newDept) {
+                      updateUserDepartment(newDept);
+                      toast({ title: 'Department Updated!', description: `Now set to "${newDept}".` });
+                    }
+                  }}
+                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-lg"
+                >
+                  Save
+                </Button>
+              </div>
+            </div>
+          </CardContent>
         </Card>
 
         {/* Event Request Form */}
