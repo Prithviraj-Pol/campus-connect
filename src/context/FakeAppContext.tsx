@@ -86,7 +86,7 @@ interface AppContextType {
   refreshEvents: () => Promise<void>;
   refreshVenues: () => Promise<void>;
   addEvent: (event: { title: string; date: string; venue_id: string; category: string; registration_fee: number; max_capacity: number; external_link?: string }) => Promise<{ success: boolean; message: string }>;
-  updateEventStatus: (id: string, status: "approved" | "rejected") => Promise<void>;
+  updateEventStatus: (id: string, status: "approved" | "rejected", requesterId?: string) => Promise<void>;
   addVenue: (venue: { name: string; capacity: number; facilities: string[] }) => Promise<{ success: boolean; message: string }>;
   deleteVenue: (id: string) => Promise<void>;
   registrations: Registration[];
@@ -371,8 +371,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true, message: 'Event added!' };
   };
 
-  const updateEventStatus = async (id, status) => {
+  const updateEventStatus = async (id: string, status: "approved" | "rejected", requesterId?: string) => {
+    // Update event status
     setEvents(prev => prev.map(e => e.id === id ? { ...e, status } : e));
+    
+    // Notify HOD if requesterId provided
+    if (requesterId) {
+      const event = events.find(e => e.id === id);
+      if (event) {
+        const action = status === 'approved' ? 'approved' : 'rejected';
+        await postNotification({
+          audience: 'hods' as const,
+          title: `Event ${action.toUpperCase()}`,
+          message: `Your event "${event.title}" has been ${action} by admin. Status: ${status.toUpperCase()}.`
+        });
+      }
+    }
   };
 
   const addVenue = async (venueData) => {
@@ -441,7 +455,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [user, loadFakeData]);
 
   // Phase 1 Step 3: Context functions
-  const postNotification = async (notif: Omit<Notification, 'id' | 'timestamp'>) => {
+  const postNotification = async (notif: Omit<Notification, 'id' | 'timestamp' | 'sender_id'>) => {
     if (!user || (user.role !== 'admin' && user.role !== 'hod')) return;
     const newNotif: Notification = {
       ...notif,

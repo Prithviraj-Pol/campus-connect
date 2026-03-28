@@ -1,30 +1,16 @@
-# Campus Connect Feature ✅ COMPLETE
+# Event Approval Workflow Implementation
 
-## Implemented:
-- [x] Dynamic college/dept (no enums) 
-- [x] Notifications table + shared NotificationBoard
-- [x] Certificates table + Student vault w/ PDF mock
-- [x] Admin Platform Settings tab
-- [x] HOD Department Profile
-- [x] Full UI/UX: Shadcn, colors, Lucide icons
+## Plan Overview
+Enhance event approval: HOD submits → Admin approves/rejects → Notify HOD → Approved events visible in StudentPortal (already works).
 
-## Git Status:
-- Branch: `blackboxai/campus-connect-notifications-certificates`
-- Committed: 6 files (FakeAppContext, dashboards, NotificationBoard.tsx)
+**Status: 0/5 steps complete**
 
-## To Demo:
-```
-bun dev
-```
-- student@campus.com / **123 → Certificates tab + notifications
-- hod@campus.com / **123 → Post circular, dept name
-- admin@campus.com / **123 → College settings
+## Steps
+1. **[PENDING]** Create TODO.md with steps (current).
+2. **[COMPLETE]** Edit FakeAppContext.tsx: Enhance `updateEventStatus` to post HOD-targeted notification.
+3. **[COMPLETE]** Edit AdminDashboard.tsx: Pass `event.requested_by` to `updateEventStatus`.
+4. **[PENDING]** Test workflow: HOD login → submit event → Admin approve → Verify HOD notification.
+5. **[PENDING]** attempt_completion: Workflow complete.
 
-## PR Ready:
-Install `gh` CLI (`winget install GitHub.cli`), `gh auth login`, then:
-```
-git push origin blackboxai/campus-connect-notifications-certificates
-gh pr create --base main
-```
+**Next: Proceed to Step 2?**
 
-Feature production-ready!

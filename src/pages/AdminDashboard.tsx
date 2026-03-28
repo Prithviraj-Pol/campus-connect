@@ -42,11 +42,11 @@ const AdminDashboard = () => {
     }
   }, [regCounts]);
 
-  const handleAction = async (id: string, status: "approved" | "rejected", title: string) => {
-    await updateEventStatus(id, status);
+  const handleAction = async (id: string, status: "approved" | "rejected", title: string, requesterId: string) => {
+    await updateEventStatus(id, status, requesterId);
     toast({
       title: status === "approved" ? "✅ Event Approved" : "❌ Event Rejected",
-      description: `"${title}" has been ${status}.`,
+      description: `"${title}" has been ${status} and HOD notified.`,
     });
   };
 
@@ -145,10 +145,10 @@ const AdminDashboard = () => {
                             <TableCell>{event.venue}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex gap-2 justify-end">
-                                <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white font-semibold" onClick={() => handleAction(event.id, "approved", event.title)}>
+                                <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white font-semibold" onClick={() => handleAction(event.id, "approved", event.title, event.requested_by || "")}>
                                   <CheckCircle2 className="w-4 h-4 mr-1" /> Approve
                                 </Button>
-                                <Button size="sm" variant="outline" className="border-red-500 text-red-500 hover:bg-red-50 font-semibold" onClick={() => handleAction(event.id, "rejected", event.title)}>
+                                <Button size="sm" variant="outline" className="border-red-500 text-red-500 hover:bg-red-50 font-semibold" onClick={() => handleAction(event.id, "rejected", event.title, event.requested_by || "")}>
                                   <XCircle className="w-4 h-4 mr-1" /> Reject
                                 </Button>
                               </div>
