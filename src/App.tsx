@@ -7,6 +7,7 @@ import { AppProvider } from "@/context/FakeAppContext";
 import Index from "./pages/Index.tsx";
 import AdminDashboard from "./pages/AdminDashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import CurrencyConverter from "@/components/CurrencyConverter.tsx";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/currency" element={<CurrencyConverter />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
