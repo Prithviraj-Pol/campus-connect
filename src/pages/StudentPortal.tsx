@@ -213,7 +213,6 @@ const StudentPortal = () => {
           </TabsContent>
         </Tabs>
       </div>
-      </div>
 
       {/* Registration Dialog - unchanged */}
       <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
@@ -349,16 +348,15 @@ const EventCard: React.FC<EventCardProps> = ({ event, registered, seatsLeft, onR
         )}
         
         {/* NEW: Coordinator Button */}
-        {isCoordinator && (
-          <DialogTrigger asChild>
-            <Button 
-              variant="outline" 
-              className="w-full bg-gradient-to-r from-orange-50 to-amber-50 border-orange-300 hover:bg-orange-50 text-orange-700 font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2"
-            >
-              <Wrench className="w-4 h-4" />
-              Coordinator Tools
-            </Button>
-          </DialogTrigger>
+{isCoordinator && (
+          <Button 
+            variant="outline" 
+            className="w-full bg-gradient-to-r from-orange-50 to-amber-50 border-orange-300 hover:bg-orange-50 text-orange-700 font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2"
+            onClick={() => openCoordinatorTools(event.id)}
+          >
+            <Wrench className="w-4 h-4" />
+            Coordinator Tools
+          </Button>
         )}
       </div>
     </CardContent>
