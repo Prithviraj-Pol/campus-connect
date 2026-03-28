@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '@/context/FakeAppContext';
 import { 
   Table, 
@@ -14,31 +14,43 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { User, Phone, Calendar, Users, CheckCircle2, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { Registration } from '@/context/FakeAppContext';
 
 interface AttendanceTrackerProps {
   eventId: string;
   onClose?: () => void;
 }
 
-interface ExtendedRegistration {
-  id: string;
-  studentName: string;
-  phone: string | null;
-  semester: string | null;
-  is_coordinator: boolean;
-  attendance_status: 'pending' | 'present' | 'absent';
-}
-
 const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({ eventId, onClose }) => {
-  const { getRegistrationsForEvent, toggleCoordinator, updateAttendance, user } = useApp();
-  const [regs] = useState(getRegistrationsForEvent(eventId));
+  const { getRegistrationsForEvent, toggleCoordinator, updateAttendance } = useApp();
+  const [regs, setRegs] = useState<Registration[]>([]);
+
+  // Sync with context changes
+  useEffect(() => {
+    setRegs(getRegistrationsForEvent(eventId));
+  }, [eventId, getRegistrationsForEvent]);
 
   const handleToggleCoordinator = (regId: string) => {
     toggleCoordinator(regId);
+    // Re-sync immediately for visual update
+    setTimeout(() => setRegs(getRegistrationsForEvent(eventId)), 0);
   };
 
   const handleUpdateAttendance = (regId: string, status: 'present' | 'absent') => {
     updateAttendance(regId, status);
+    // Re-sync
+    setTimeout(() => setRegs(getRegistrationsForEvent(eventId)), 0);
+  };
+
+  const getStudentName = (studentId: string): string => {
+    const names: Record<string, string> = {
+      'student1': 'John Student (CS Sem 5)',
+      'student2': 'Jane Doe (Mech Sem 3)',
+      'student3': 'Bob Wilson (AIDS Sem 7)',
+      'student4': 'Alice Smith (Cultural Sem 4)',
+      'student5': 'Charlie Brown (AI Sem 6)'
+    };
+    return names[studentId as keyof typeof names] || `Student ${studentId.slice(-2).toUpperCase()}`;
   };
 
   const presentCount = regs.filter(r => r.attendance_status === 'present').length;
@@ -46,21 +58,6 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({ eventId, onClose 
   const pendingCount = regs.filter(r => r.attendance_status === 'pending').length;
   const total = regs.length;
   const coordinatorCount = regs.filter(r => r.is_coordinator).length;
-
-  const getStudentName = (studentId: string): string => {
-    // Simple lookup - enhance with full users store later
-    const names = {
-      'student1': 'John Student (CS Sem 5)',
-      'student2': 'Jane Doe (Mech Sem 3)',
-      'student3': 'Bob Wilson (AIDS Sem 7)'
-    };
-    return names[studentId as keyof typeof names] || 'Unknown Student';
-  };
-
-  const extendedRegs: ExtendedRegistration[] = regs.map(reg => ({
-    ...reg,
-    studentName: getStudentName(reg.student_id)
-  }));
 
   return (
     <div className="w-full max-w-6xl mx-auto p-1 bg-gradient-to-br from-slate-50/50 to-white/80 min-h-[500px]">
@@ -108,11 +105,11 @@ const AttendanceTracker: React.FC<AttendanceTrackerProps> = ({ eventId, onClose 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {extendedRegs.map((reg) => (
+            {regs.map((reg) => (
               <TableRow key={reg.id} className="hover:bg-orange-50/50 border-b border-slate-100 transition-colors">
                 <TableCell className="font-medium text-slate-800 flex items-center gap-2 py-4">
                   <User className="w-5 h-5 text-slate-500 flex-shrink-0" />
-                  <span className="truncate">{reg.studentName}</span>
+                  <span className="truncate">{getStudentName(reg.student_id)}</span>
                 </TableCell>
                 <TableCell className="text-sm text-slate-600">{reg.phone || '-'}</TableCell>
                 <TableCell className="text-sm font-semibold text-[#1E3A8A]">{reg.semester || '-'}</TableCell>
